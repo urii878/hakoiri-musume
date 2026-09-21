@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+
+  <title id="page-title">無料ブラウザゲーム｜アタマアソビ</title>
+  <meta id="meta-description" name="description" content="無料で遊べるブラウザゲームです。" />
+  <meta id="meta-keywords" name="keywords" content="" />
+
+  <meta property="og:type" content="website" />
+  <meta id="og-title" property="og:title" content="無料ブラウザゲーム" />
+  <meta id="og-description" property="og:description" content="無料で遊べるブラウザゲームです。" />
+  <meta id="og-image" property="og:image" content="./assets/og-image.svg" />
+  <meta id="og-url" property="og:url" content="" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./css/style.css" />
+
+  <!-- AdSenseを使う場合は、config.js の ads.enabled を true にし、
+       自分のAdSenseコードをここに貼ってください。
+  <script async
+    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXX"
+    crossorigin="anonymous"></script>
+  -->
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a id="portal-link-top" class="brand" href="#" rel="noopener">
+        <span class="brand-mark">A</span>
+        <span>アタマアソビ</span>
+      </a>
+
+      <button id="howto-open" class="ghost-btn" type="button">遊び方</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero shell">
+      <p id="eyebrow" class="eyebrow">無料・インストール不要</p>
+      <h1 id="game-title">ゲームタイトル</h1>
+      <p id="game-lead" class="lead">ゲーム説明</p>
+    </section>
+
+    <section class="game-shell shell" aria-label="ゲーム">
+      <div class="game-toolbar">
+        <div>
+          <div class="toolbar-label">SCORE</div>
+          <div id="score-display" class="toolbar-value">0</div>
+        </div>
+        <div>
+          <div class="toolbar-label">TIME</div>
+          <div id="time-display" class="toolbar-value">--</div>
+        </div>
+        <div class="toolbar-actions">
+          <button id="game-reset" class="small-btn" type="button">リセット</button>
+        </div>
+      </div>
+
+      <div id="game-root" class="game-root">
+        <!-- game.js がここにゲーム本体を描画します -->
+      </div>
+    </section>
+
+    <section id="ad-section" class="shell content-card ad-card" hidden>
+      <p class="section-kicker">ADVERTISEMENT</p>
+      <div id="ad-slot">
+        広告枠
+      </div>
+    </section>
+
+    <section class="shell content-card">
+      <p class="section-kicker">HOW TO PLAY</p>
+      <h2>遊び方</h2>
+      <div id="howto-content"></div>
+    </section>
+
+    <section class="shell content-card">
+      <p class="section-kicker">ABOUT</p>
+      <h2 id="about-title">このゲームについて</h2>
+      <div id="about-content"></div>
+    </section>
+
+    <section id="ranking-section" class="shell content-card" hidden>
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">RANKING</p>
+          <h2>ランキング</h2>
+        </div>
+        <button id="ranking-refresh" class="small-btn" type="button">更新</button>
+      </div>
+
+      <p id="ranking-note" class="muted"></p>
+      <div id="ranking-list" class="ranking-list"></div>
+    </section>
+
+    <section class="shell content-card">
+      <p class="section-kicker">FAQ</p>
+      <h2>よくある質問</h2>
+      <div id="faq-list" class="faq-list"></div>
+    </section>
+
+    <section class="shell back-card">
+      <div>
+        <strong>ほかの無料ゲームも遊ぶ</strong>
+        <p>短時間で遊べる無料ブラウザゲームを公開しています。</p>
+      </div>
+      <a id="portal-link-bottom" class="primary-btn" href="#" rel="noopener">アタマアソビへ</a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell footer-inner">
+      <span id="footer-game-name">ゲーム名</span>
+      <nav>
+        <a href="./privacy.html">プライバシーポリシー</a>
+        <a id="portal-link-footer" href="#" rel="noopener">アタマアソビ</a>
+      </nav>
+    </div>
+  </footer>
+
+  <!-- 遊び方モーダル -->
+  <dialog id="howto-dialog">
+    <div class="dialog-inner">
+      <div class="dialog-head">
+        <h2>遊び方</h2>
+        <button id="howto-close" class="icon-btn" type="button" aria-label="閉じる">×</button>
+      </div>
+      <div id="howto-dialog-content"></div>
+    </div>
+  </dialog>
+
+  <!-- リザルトモーダル -->
+  <dialog id="result-dialog">
+    <div class="dialog-inner result-inner">
+      <p class="section-kicker">RESULT</p>
+      <h2 id="result-title">ゲーム終了</h2>
+      <div id="result-stats" class="result-stats"></div>
+
+      <form id="ranking-form" class="ranking-form" hidden>
+        <label for="player-name">ランキング登録名</label>
+        <div class="ranking-form-row">
+          <input id="player-name" name="name" maxlength="12" autocomplete="nickname" placeholder="No Name" />
+          <button class="primary-btn" type="submit">登録</button>
+        </div>
+        <p id="ranking-form-message" class="muted"></p>
+      </form>
+
+      <div class="result-actions">
+        <button id="result-retry" class="primary-btn" type="button">もう一度</button>
+        <button id="result-close" class="ghost-btn" type="button">閉じる</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="./js/config.js"></script>
+  <script src="./js/ranking.js"></script>
+  <script src="./js/common.js"></script>
+  <script src="./js/game.js"></script>
+</body>
+</html>
