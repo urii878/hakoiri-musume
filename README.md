@@ -35,8 +35,8 @@ atamaasobi-game-template/
 │  ├─ ranking.js
 │  └─ game.js
 ├─ assets/
-│  ├─ favicon.svg
-│  └─ og-image.svg
+│  ├─ favicon.png
+│  └─ og-image.png
 ├─ privacy.html
 ├─ robots.txt
 ├─ sitemap.xml

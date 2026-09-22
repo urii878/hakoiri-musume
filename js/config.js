@@ -29,7 +29,7 @@ window.GAME_CONFIG = {
   // Vercel公開後に実際のURLへ変更します
  canonicalUrl: "https://hakoiri-musume-xi.vercel.app/",
 
-ogImage: "https://hakoiri-musume-xi.vercel.app/assets/og-image.svg",
+ogImage: "https://hakoiri-musume-xi.vercel.app/assets/og-image.png",
 
 portalName: "アタマアソビ",
 
