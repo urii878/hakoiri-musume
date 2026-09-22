@@ -9,10 +9,6 @@
   const ROWS = 5;
   const GOAL_ID = "goal";
   const STORAGE_PREFIX = "hakoiri-musume";
-  const MIN_SOLUTION_MOVES = 30;
-
-const PLAYER_NAME_KEY =
-  `${STORAGE_PREFIX}:player-name`;
 
   /*
     クリア状態。
@@ -316,50 +312,6 @@ const PLAYER_NAME_KEY =
 
 
       /* HOME */
-      .game-toolbar.hm-home-toolbar{
-  display:block;
-  padding:16px 18px;
-}
-
-.game-toolbar.hm-home-toolbar
-> :not(.hm-player-toolbar){
-  display:none;
-}
-
-.hm-player-toolbar{
-  display:none;
-}
-
-.game-toolbar.hm-home-toolbar
-.hm-player-toolbar{
-  display:grid;
-  gap:7px;
-  width:min(100%,520px);
-}
-
-.hm-player-label{
-  font-weight:900;
-  font-size:.95rem;
-}
-
-.hm-player-input{
-  width:100%;
-  border:1px solid var(--line);
-  border-radius:16px;
-  padding:13px 14px;
-  background:white;
-  color:var(--text);
-  outline:none;
-}
-
-.hm-player-input:focus{
-  border-color:#aaa094;
-}
-
-.hm-player-note{
-  color:var(--muted);
-  font-size:.8rem;
-}
 
       .hm-home{
         width:min(100%,720px);
@@ -1040,148 +992,10 @@ const PLAYER_NAME_KEY =
   画面切り替え
   ========================================
   */
-  function ensurePlayerToolbar() {
-  if (!toolbar) {
-    return;
-  }
 
-  let playerToolbar =
-    document.getElementById(
-      "hm-player-toolbar"
-    );
-
-  if (!playerToolbar) {
-    playerToolbar =
-      document.createElement(
-        "div"
-      );
-
-    playerToolbar.id =
-      "hm-player-toolbar";
-
-    playerToolbar.className =
-      "hm-player-toolbar";
-
-    playerToolbar.innerHTML = `
-      <label
-        class="hm-player-label"
-        for="hm-player-name"
-      >
-        ランキング登録名
-      </label>
-
-      <input
-        id="hm-player-name"
-        class="hm-player-input"
-        type="text"
-        maxlength="12"
-        autocomplete="nickname"
-        placeholder="No Name"
-      />
-
-      <span class="hm-player-note">
-        未入力の場合は No Name で登録されます。
-      </span>
-    `;
-
-    toolbar.appendChild(
-      playerToolbar
-    );
-
-    const input =
-      document.getElementById(
-        "hm-player-name"
-      );
-
-    input.value =
-      localStorage.getItem(
-        PLAYER_NAME_KEY
-      ) || "";
-
-    input.addEventListener(
-      "input",
-      () => {
-        const value =
-          input.value.trim();
-
-        if (value) {
-          localStorage.setItem(
-            PLAYER_NAME_KEY,
-            value
-          );
-        } else {
-          localStorage.removeItem(
-            PLAYER_NAME_KEY
-          );
-        }
-      }
-    );
-  }
-}
-
- function setLayout(
-  nextScreen
-) {
-  screen = nextScreen;
-
-  shell?.classList.remove(
-    "hm-home-state",
-    "hm-play-state",
-    "hm-result-state"
-  );
-
-  shell?.classList.add(
-    `hm-${nextScreen}-state`
-  );
-
-  if (
-    nextScreen === "home"
+  function setLayout(
+    nextScreen
   ) {
-    if (hero) {
-      hero.style.display = "";
-    }
-
-    if (toolbar) {
-      toolbar.hidden = false;
-
-      toolbar.classList.add(
-        "hm-home-toolbar"
-      );
-
-      ensurePlayerToolbar();
-    }
-
-  } else if (
-    nextScreen === "play"
-  ) {
-    if (hero) {
-      hero.style.display =
-        "none";
-    }
-
-    if (toolbar) {
-      toolbar.hidden = false;
-
-      toolbar.classList.remove(
-        "hm-home-toolbar"
-      );
-    }
-
-  } else {
-    if (hero) {
-      hero.style.display =
-        "none";
-    }
-
-    if (toolbar) {
-      toolbar.classList.remove(
-        "hm-home-toolbar"
-      );
-
-      toolbar.hidden = true;
-    }
-  }
-} {
     screen = nextScreen;
 
     shell?.classList.remove(
@@ -2393,28 +2207,6 @@ const PLAYER_NAME_KEY =
   */
 
   function renderDailyRankingShell() {
-  return `
-    <section class="hm-ranking">
-
-      <h3>
-        今日のオンラインランキング
-      </h3>
-
-      <p
-        class="hm-ranking-note"
-        id="hm-rank-note"
-      >
-        記録を登録しています…
-      </p>
-
-      <div
-        class="hm-rank-list"
-        id="hm-rank-list"
-      ></div>
-
-    </section>
-  `;
-} {
     return `
       <section class="hm-ranking">
 
@@ -2464,60 +2256,8 @@ const PLAYER_NAME_KEY =
 
 
   async function setupDailyRanking(
-  seconds
-) {
-  const note =
-    document.getElementById(
-      "hm-rank-note"
-    );
-
-  if (
-    !dailyRankingReady()
+    seconds
   ) {
-    if (note) {
-      note.textContent =
-        "オンラインランキングは現在利用できません。";
-    }
-
-    return;
-  }
-
-  const storedName =
-    (
-      localStorage.getItem(
-        PLAYER_NAME_KEY
-      ) || ""
-    ).trim();
-
-  const name =
-    storedName ||
-    "No Name";
-
-  if (note) {
-    note.textContent =
-      `${name} で記録を登録しています…`;
-  }
-
-  try {
-    await submitDailyRanking(
-      name,
-      seconds,
-      moves
-    );
-
-    await loadDailyRanking();
-
-  } catch (error) {
-    console.error(
-      error
-    );
-
-    if (note) {
-      note.textContent =
-        "ランキング登録に失敗しました。";
-    }
-  }
-} {
     const note =
       document.getElementById(
         "hm-rank-note"
@@ -2984,20 +2724,14 @@ const PLAYER_NAME_KEY =
 
 
       if (
-  !isSolved(state) &&
-
-  boardId(state) !==
-    boardId(
-      SOLVED_BLOCKS
-    ) &&
-
-  !hasSolutionWithin(
-    state,
-    MIN_SOLUTION_MOVES
-  )
-) {
-  return state;
-}
+        !isSolved(state) &&
+        boardId(state) !==
+          boardId(
+            SOLVED_BLOCKS
+          )
+      ) {
+        return state;
+      }
     }
 
     return cloneBlocks(
@@ -3025,248 +2759,6 @@ const PLAYER_NAME_KEY =
                   direction,
                   state
                 )
-                function solverStateKey(
-  state
-) {
-  const goal =
-    state.find(
-      (block) =>
-        block.type === "goal"
-    );
-
-  const horizontal =
-    state.find(
-      (block) =>
-        block.type ===
-        "horizontal"
-    );
-
-  const vertical =
-    state
-      .filter(
-        (block) =>
-          block.type ===
-          "vertical"
-      )
-      .map(
-        (block) => [
-          block.x,
-          block.y
-        ]
-      )
-      .sort(
-        (a, b) =>
-          a[1] - b[1] ||
-          a[0] - b[0]
-      );
-
-  const small =
-    state
-      .filter(
-        (block) =>
-          block.type ===
-          "small"
-      )
-      .map(
-        (block) => [
-          block.x,
-          block.y
-        ]
-      )
-      .sort(
-        (a, b) =>
-          a[1] - b[1] ||
-          a[0] - b[0]
-      );
-
-  return JSON.stringify({
-    g: [
-      goal.x,
-      goal.y
-    ],
-
-    h: [
-      horizontal.x,
-      horizontal.y
-    ],
-
-    v: vertical,
-
-    s: small
-  });
-}
-
-
-function solverNextStates(
-  state
-) {
-  const result = [];
-
-  state.forEach(
-    (block) => {
-
-      Object
-        .keys(DIRS)
-        .forEach(
-          (direction) => {
-
-            const dir =
-              DIRS[
-                direction
-              ];
-
-            const moving = {
-              ...block
-            };
-
-            let distance = 0;
-
-            while (
-              canMoveInState(
-                moving,
-                direction,
-                state
-              )
-            ) {
-              moving.x +=
-                dir.dx;
-
-              moving.y +=
-                dir.dy;
-
-              distance += 1;
-
-              const next =
-                cloneBlocks(
-                  state
-                );
-
-              const target =
-                next.find(
-                  (item) =>
-                    item.id ===
-                    block.id
-                );
-
-              target.x =
-                block.x +
-                dir.dx *
-                distance;
-
-              target.y =
-                block.y +
-                dir.dy *
-                distance;
-
-              result.push(
-                next
-              );
-            }
-          }
-        );
-    }
-  );
-
-  return result;
-}
-
-
-function hasSolutionWithin(
-  startState,
-  maxMoves
-) {
-  if (
-    isSolved(
-      startState
-    )
-  ) {
-    return true;
-  }
-
-  const queue = [
-    {
-      state:
-        cloneBlocks(
-          startState
-        ),
-
-      depth: 0
-    }
-  ];
-
-  const visited =
-    new Set([
-      solverStateKey(
-        startState
-      )
-    ]);
-
-  let head = 0;
-
-  while (
-    head <
-    queue.length
-  ) {
-    const current =
-      queue[
-        head
-      ];
-
-    head += 1;
-
-    if (
-      current.depth >=
-      maxMoves
-    ) {
-      continue;
-    }
-
-    const nextStates =
-      solverNextStates(
-        current.state
-      );
-
-    for (
-      const next
-      of nextStates
-    ) {
-      const key =
-        solverStateKey(
-          next
-        );
-
-      if (
-        visited.has(
-          key
-        )
-      ) {
-        continue;
-      }
-
-      if (
-        isSolved(
-          next
-        )
-      ) {
-        return true;
-      }
-
-      visited.add(
-        key
-      );
-
-      queue.push({
-        state: next,
-
-        depth:
-          current.depth +
-          1
-      });
-    }
-  }
-
-  return false;
-}
               ) {
 
                 result.push({
