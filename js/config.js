@@ -111,6 +111,17 @@ portalUrl: "https://atama-asobi.vercel.app/",
 
   // 最初はランキングOFF
   // 検索流入を確認してから追加可能
+    // 今日の問題専用オンラインランキング
+  dailyRanking: {
+    enabled: false,
+
+    // Supabase設定後に変更
+    supabaseUrl: "https://YOUR_PROJECT.supabase.co",
+    supabaseAnonKey: "YOUR_PUBLISHABLE_OR_ANON_KEY",
+
+    table: "hakoiri_daily_scores",
+    limit: 10
+  },
   ranking: {
     enabled: false,
 
