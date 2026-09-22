@@ -116,12 +116,18 @@ portalUrl: "https://atama-asobi.vercel.app/",
     enabled: false,
 
     // Supabase設定後に変更
-    supabaseUrl: "https://YOUR_PROJECT.supabase.co",
-    supabaseAnonKey: "YOUR_PUBLISHABLE_OR_ANON_KEY",
+   dailyRanking: {
+  enabled: true,
 
-    table: "hakoiri_daily_scores",
-    limit: 10
-  },
+  supabaseUrl: "https://nbwcdvqhzgxjpnzgtvqn.supabase.co",
+
+  supabaseAnonKey:
+    "sb_publishable_lO1k_kKGXt6yrHA2QehHGg_DzCvlvE9",
+
+  table: "hakoiri_daily_scores",
+
+  limit: 10
+},
   ranking: {
     enabled: false,
 
