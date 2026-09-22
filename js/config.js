@@ -44,7 +44,7 @@ portalUrl: "https://atama-asobi.vercel.app/",
     </p>
 
     <ol>
-      <li>動かしたい駒をタップまたはドラッグします。</li>
+      <li>PCではマウス、スマホでは指で駒をスライドします。</li>
       <li>空いているスペースを使って、駒を上下左右に移動させます。</li>
       <li>ほかの駒をうまく移動させながら、「娘」の進路を作ります。</li>
       <li>娘を盤面下側の出口まで移動できればクリアです。</li>
@@ -109,25 +109,15 @@ portalUrl: "https://atama-asobi.vercel.app/",
     enabled: false
   },
 
-  // 最初はランキングOFF
-  // 検索流入を確認してから追加可能
-    // 今日の問題専用オンラインランキング
+  // 今日の問題専用オンラインランキング
   dailyRanking: {
-    enabled: false,
+    enabled: true,
+    supabaseUrl: "https://nbwcdvqhzgxjpnzgtvqn.supabase.co",
+    supabaseAnonKey: "sb_publishable_lO1k_kKGXt6yrHA2QehHGg_DzCvlvE9",
+    table: "hakoiri_daily_scores",
+    limit: 10
+  },
 
-    // Supabase設定後に変更
-   dailyRanking: {
-  enabled: true,
-
-  supabaseUrl: "https://nbwcdvqhzgxjpnzgtvqn.supabase.co",
-
-  supabaseAnonKey:
-    "sb_publishable_lO1k_kKGXt6yrHA2QehHGg_DzCvlvE9",
-
-  table: "hakoiri_daily_scores",
-
-  limit: 10
-},
   ranking: {
     enabled: false,
 
@@ -145,3 +135,4 @@ portalUrl: "https://atama-asobi.vercel.app/",
     limit: 10
   }
 };
+

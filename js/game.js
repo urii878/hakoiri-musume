@@ -9,6 +9,10 @@
   const ROWS = 5;
   const GOAL_ID = "goal";
   const STORAGE_PREFIX = "hakoiri-musume";
+  const MIN_SOLUTION_MOVES = 30;
+  const PLAYER_NAME_KEY = `${STORAGE_PREFIX}:player-name`;
+  let generating = false;
+  let playerName = "";
 
   /*
     クリア状態。
@@ -96,94 +100,6 @@
       h: 2,
       type: "goal",
       label: "娘"
-    }
-  ];
-
-  /*
-    万が一ランダム生成に失敗した場合の
-    既知の解ける配置。
-  */
-  const FALLBACK_BLOCKS = [
-    {
-      id: "v1",
-      x: 0,
-      y: 0,
-      w: 1,
-      h: 2,
-      type: "vertical"
-    },
-    {
-      id: GOAL_ID,
-      x: 1,
-      y: 0,
-      w: 2,
-      h: 2,
-      type: "goal",
-      label: "娘"
-    },
-    {
-      id: "v2",
-      x: 3,
-      y: 0,
-      w: 1,
-      h: 2,
-      type: "vertical"
-    },
-    {
-      id: "v3",
-      x: 0,
-      y: 2,
-      w: 1,
-      h: 2,
-      type: "vertical"
-    },
-    {
-      id: "h1",
-      x: 1,
-      y: 2,
-      w: 2,
-      h: 1,
-      type: "horizontal"
-    },
-    {
-      id: "v4",
-      x: 3,
-      y: 2,
-      w: 1,
-      h: 2,
-      type: "vertical"
-    },
-    {
-      id: "s1",
-      x: 1,
-      y: 3,
-      w: 1,
-      h: 1,
-      type: "small"
-    },
-    {
-      id: "s2",
-      x: 2,
-      y: 3,
-      w: 1,
-      h: 1,
-      type: "small"
-    },
-    {
-      id: "s3",
-      x: 0,
-      y: 4,
-      w: 1,
-      h: 1,
-      type: "small"
-    },
-    {
-      id: "s4",
-      x: 3,
-      y: 4,
-      w: 1,
-      h: 1,
-      type: "small"
     }
   ];
 
@@ -310,6 +226,20 @@
         padding:22px;
       }
 
+
+      .game-toolbar[hidden] { display:none !important; }
+      .game-toolbar.hm-home-toolbar { display:block; }
+      .game-toolbar.hm-home-toolbar > :not(.hm-player-toolbar) { display:none; }
+      .hm-player-toolbar { display:none; }
+      .hm-home-toolbar .hm-player-toolbar {
+        display:grid; gap:8px; width:min(100%,520px);
+      }
+      .hm-player-toolbar label { font-weight:800; }
+      .hm-player-toolbar input {
+        width:100%; box-sizing:border-box; border:1px solid var(--line);
+        border-radius:14px; padding:11px 12px; background:white; color:var(--text);
+      }
+      .hm-player-toolbar p { margin:0; color:var(--muted); font-size:.85rem; }
 
       /* HOME */
 
@@ -993,58 +923,47 @@
   ========================================
   */
 
-  function setLayout(
-    nextScreen
-  ) {
-    screen = nextScreen;
 
-    shell?.classList.remove(
-      "hm-home-state",
-      "hm-play-state",
-      "hm-result-state"
-    );
-
-    shell?.classList.add(
-      `hm-${nextScreen}-state`
-    );
-
-    if (
-      nextScreen === "home"
-    ) {
-
-      if (hero) {
-        hero.style.display = "";
-      }
-
-      if (toolbar) {
-        toolbar.hidden = true;
-      }
-
-    } else if (
-      nextScreen === "play"
-    ) {
-
-      if (hero) {
-        hero.style.display = "none";
-      }
-
-      if (toolbar) {
-        toolbar.hidden = false;
-      }
-
-    } else {
-
-      if (hero) {
-        hero.style.display = "none";
-      }
-
-      if (toolbar) {
-        toolbar.hidden = true;
-      }
-
+  function ensurePlayerToolbar() {
+    if (!toolbar || document.getElementById("hm-player-toolbar")) return;
+    try {
+      playerName = (localStorage.getItem(PLAYER_NAME_KEY) || "").slice(0, 12);
+    } catch (error) {
+      playerName = "";
     }
+    const panel = document.createElement("div");
+    panel.id = "hm-player-toolbar";
+    panel.className = "hm-player-toolbar";
+    panel.innerHTML = `
+      <label for="hm-player-name">ランキング登録名</label>
+      <input id="hm-player-name" type="text" maxlength="12"
+        autocomplete="nickname" placeholder="No Name"
+        aria-describedby="hm-player-note" />
+      <p id="hm-player-note">未入力の場合は No Name で登録されます。</p>
+    `;
+    toolbar.appendChild(panel);
+    const input = panel.querySelector("input");
+    input.value = playerName;
+    input.addEventListener("input", () => {
+      playerName = input.value.slice(0, 12);
+      try {
+        localStorage.setItem(PLAYER_NAME_KEY, playerName);
+      } catch (error) {
+        // 保存できない環境でも、このページ内では入力名を利用する。
+      }
+    });
   }
 
+  function setLayout(nextScreen) {
+    screen = nextScreen;
+    shell?.classList.remove("hm-home-state", "hm-play-state", "hm-result-state");
+    shell?.classList.add(`hm-${nextScreen}-state`);
+    if (hero) hero.style.display = nextScreen === "home" ? "" : "none";
+    if (toolbar) {
+      toolbar.hidden = nextScreen === "result";
+      toolbar.classList.toggle("hm-home-toolbar", nextScreen === "home");
+    }
+  }
 
   /*
   ========================================
@@ -1175,61 +1094,49 @@
   ========================================
   */
 
-  function startPuzzle(
-    nextMode
-  ) {
+  async function startPuzzle(nextMode) {
+    if (generating) return;
+    generating = true;
     stopTimer();
-
     finished = false;
-
     drag = null;
-
     mode = nextMode;
-
-    dailyKey =
-      getJstDateKey();
-
-    const seed =
-      mode === "daily"
-        ? hashString(
-            `daily-${dailyKey}`
-          )
-        : randomSeed();
-
-    const generated =
-      generatePuzzle(seed);
-
-    initialBlocks =
-      cloneBlocks(
-        generated
-      );
-
-    blocks =
-      cloneBlocks(
-        generated
-      );
-
-    problemId =
-      boardId(
-        generated
-      );
-
-    moves = 0;
-
-    elapsedMs = 0;
-
-    startedAt =
-      performance.now();
-
-    setLayout("play");
-
-    updateToolbar();
-
-    renderPlay();
-
-    startTimer();
+    dailyKey = getJstDateKey();
+    const seed = mode === "daily"
+      ? hashString(`daily-${dailyKey}`)
+      : randomSeed();
+    const buttons = [...root.querySelectorAll("button")];
+    buttons.forEach((button) => { button.disabled = true; });
+    const status = document.createElement("p");
+    status.className = "hm-tip";
+    status.setAttribute("role", "status");
+    status.textContent = "問題を準備しています…";
+    root.appendChild(status);
+    try {
+      const generated = await generatePuzzle(seed);
+      initialBlocks = cloneBlocks(generated);
+      blocks = cloneBlocks(generated);
+      problemId = boardId(generated);
+      moves = 0;
+      elapsedMs = 0;
+      startedAt = performance.now();
+      setLayout("play");
+      updateToolbar();
+      renderPlay();
+      startTimer();
+    } catch (error) {
+      console.error(error);
+      renderHome();
+      const message = document.createElement("p");
+      message.className = "hm-tip";
+      message.textContent = "問題を生成できませんでした。もう一度お試しください。";
+      root.appendChild(message);
+    } finally {
+      generating = false;
+      buttons.forEach((button) => { button.disabled = false; });
+      status.remove();
+    }
   }
-
 
   /*
   ========================================
@@ -2209,160 +2116,39 @@
   function renderDailyRankingShell() {
     return `
       <section class="hm-ranking">
-
-        <h3>
-          今日のオンラインランキング
-        </h3>
-
-        <p
-          class="hm-ranking-note"
-          id="hm-rank-note"
-        >
-          ランキングを読み込んでいます…
-        </p>
-
-
-        <form
-          class="hm-rank-form"
-          id="hm-rank-form"
-          hidden
-        >
-
-          <input
-            id="hm-rank-name"
-            maxlength="12"
-            autocomplete="nickname"
-            placeholder="プレイヤー名"
-          />
-
-          <button
-            class="hm-action-primary"
-            type="submit"
-          >
-            登録
-          </button>
-
-        </form>
-
-
-        <div
-          class="hm-rank-list"
-          id="hm-rank-list"
-        ></div>
-
+        <h3>今日のオンラインランキング</h3>
+        <p class="hm-ranking-note" id="hm-rank-note">記録を登録しています…</p>
+        <div class="hm-rank-list" id="hm-rank-list"></div>
       </section>
     `;
   }
 
-
-  async function setupDailyRanking(
-    seconds
-  ) {
-    const note =
-      document.getElementById(
-        "hm-rank-note"
-      );
-
-    const form =
-      document.getElementById(
-        "hm-rank-form"
-      );
-
-    const nameInput =
-      document.getElementById(
-        "hm-rank-name"
-      );
-
-    if (
-      !dailyRankingReady()
-    ) {
-
-      if (note) {
-        note.textContent =
-          "オンラインランキングは設定後に利用できます。";
-      }
-
+  async function setupDailyRanking(seconds) {
+    const note = document.getElementById("hm-rank-note");
+    const list = document.getElementById("hm-rank-list");
+    const dateKey = dailyKey;
+    const moveCount = moves;
+    const name = playerName.trim().slice(0, 12) || "No Name";
+    if (!dailyRankingReady()) {
+      if (note) note.textContent = "オンラインランキングは設定後に利用できます。";
       return;
     }
-
-
-    if (nameInput) {
-
-      nameInput.value =
-        localStorage.getItem(
-          `${STORAGE_PREFIX}:player-name`
-        ) || "";
+    let registered = false;
+    try {
+      await submitDailyRanking(name, seconds, moveCount, dateKey);
+      registered = true;
+    } catch (error) {
+      console.error(error);
     }
-
-
-    if (form) {
-      form.hidden = false;
+    // 別のプレイに移った場合も、完了した記録の登録先・表示先を混同しない。
+    if (!list?.isConnected) return;
+    await loadDailyRanking(dateKey, list, note);
+    if (note?.isConnected) {
+      note.textContent = registered
+        ? `登録しました。${note.textContent}`
+        : `ランキング登録に失敗しました。${note.textContent}`;
     }
-
-
-    form?.addEventListener(
-      "submit",
-
-      async (e) => {
-
-        e.preventDefault();
-
-        const name =
-          (
-            nameInput?.value ||
-            ""
-          ).trim() ||
-          "No Name";
-
-        localStorage.setItem(
-          `${STORAGE_PREFIX}:player-name`,
-          name
-        );
-
-        if (note) {
-          note.textContent =
-            "登録中…";
-        }
-
-        try {
-
-          await submitDailyRanking(
-            name,
-            seconds,
-            moves
-          );
-
-          if (note) {
-            note.textContent =
-              "登録しました。";
-          }
-
-          if (form) {
-            form.hidden = true;
-          }
-
-          await loadDailyRanking();
-
-        } catch (error) {
-
-          console.error(
-            error
-          );
-
-          if (note) {
-            note.textContent =
-              "ランキング登録に失敗しました。";
-          }
-        }
-      },
-      {
-        once: true
-      }
-    );
-
-    await loadDailyRanking();
   }
-
 
   function dailyRankingConfig() {
     return (
@@ -2442,58 +2228,28 @@
   }
 
 
-  async function submitDailyRanking(
-    name,
-    seconds,
-    moveCount
-  ) {
-    const cfg =
-      dailyRankingConfig();
-
-    return rankingFetch(
-      cfg.table,
-
-      {
-        method: "POST",
-
-        body:
-          JSON.stringify({
-            name,
-            score:
-              seconds,
-            moves:
-              moveCount,
-            date_key:
-              dailyKey
-          })
-      }
-    );
+  async function submitDailyRanking(name, seconds, moveCount, dateKey) {
+    const cfg = dailyRankingConfig();
+    return rankingFetch(cfg.table, {
+      method: "POST",
+      body: JSON.stringify({
+        name,
+        score: seconds,
+        moves: moveCount,
+        date_key: dateKey
+      })
+    });
   }
 
-
-  async function loadDailyRanking() {
-    const cfg =
-      dailyRankingConfig();
-
-    const list =
-      document.getElementById(
-        "hm-rank-list"
-      );
-
-    const note =
-      document.getElementById(
-        "hm-rank-note"
-      );
-
-    if (!list) {
-      return;
-    }
+  async function loadDailyRanking(dateKey, list, note) {
+    const cfg = dailyRankingConfig();
+    if (!list?.isConnected) return;
 
     try {
 
       const rows =
         await rankingFetch(
-          `${encodeURIComponent(cfg.table)}?select=name,score,moves&date_key=eq.${encodeURIComponent(dailyKey)}&order=score.asc,moves.asc&limit=${cfg.limit || 10}`
+          `${encodeURIComponent(cfg.table)}?select=name,score,moves&date_key=eq.${encodeURIComponent(dateKey)}&order=score.asc,moves.asc&limit=${cfg.limit || 10}`
         );
 
 
@@ -2535,7 +2291,7 @@
 
         note.textContent =
           rows.length
-            ? `${formatDateJa(dailyKey)}の上位${rows.length}件`
+            ? `${formatDateJa(dateKey)}の上位${rows.length}件`
             : "まだ記録がありません。";
       }
 
@@ -2613,132 +2369,112 @@
   ========================================
   */
 
-  function generatePuzzle(seed) {
-    for (
-      let attempt = 0;
-      attempt < 12;
-      attempt += 1
-    ) {
-
-      const rng =
-        mulberry32(
-          (
-            seed +
-            attempt *
-            0x9e3779b9
-          ) >>> 0
-        );
-
-      const state =
-        cloneBlocks(
-          SOLVED_BLOCKS
-        );
-
+  async function generatePuzzle(seed) {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    // クリア配置からの合法手シャッフルを維持する。判定未済の代替盤面は出さない。
+    for (let attempt = 0; ; attempt += 1) {
+      const rng = mulberry32((seed + Math.imul(attempt, 0x9e3779b9)) >>> 0);
+      const state = cloneBlocks(SOLVED_BLOCKS);
       let last = null;
-
-      const targetSteps =
-        130 +
-        Math.floor(
-          rng() * 90
-        );
-
-
-      for (
-        let i = 0;
-        i < targetSteps;
-        i += 1
-      ) {
-
-        let options =
-          listLegalMoves(
-            state
+      const targetSteps = 2000 + Math.floor(rng() * 2000);
+      for (let i = 0; i < targetSteps; i += 1) {
+        let options = listLegalMoves(state);
+        if (last && options.length > 1) {
+          const filtered = options.filter((move) =>
+            !(move.id === last.id && move.dir === DIRS[last.dir].opposite)
           );
-
-
-        if (
-          last &&
-          options.length > 1
-        ) {
-
-          const filtered =
-            options.filter(
-              (move) =>
-                !(
-                  move.id ===
-                    last.id &&
-                  move.dir ===
-                    DIRS[
-                      last.dir
-                    ].opposite
-                )
-            );
-
-          if (
-            filtered.length
-          ) {
-            options =
-              filtered;
-          }
+          if (filtered.length) options = filtered;
         }
-
-
-        if (
-          !options.length
-        ) {
-          break;
-        }
-
-
-        const choice =
-          options[
-            Math.floor(
-              rng() *
-              options.length
-            )
-          ];
-
-
-        const block =
-          state.find(
-            (item) =>
-              item.id ===
-              choice.id
-          );
-
-
-        const dir =
-          DIRS[
-            choice.dir
-          ];
-
-
-        block.x +=
-          dir.dx;
-
-        block.y +=
-          dir.dy;
-
-        last =
-          choice;
+        if (!options.length) break;
+        const choice = options[Math.floor(rng() * options.length)];
+        const block = state.find((item) => item.id === choice.id);
+        const dir = DIRS[choice.dir];
+        block.x += dir.dx;
+        block.y += dir.dy;
+        last = choice;
       }
-
-
-      if (
-        !isSolved(state) &&
-        boardId(state) !==
-          boardId(
-            SOLVED_BLOCKS
-          )
-      ) {
-        return state;
-      }
+      const shortest = await minimumSolutionMoves(state);
+      if (Number.isFinite(shortest) && shortest > MIN_SOLUTION_MOVES) return state;
+      // 待機時間はseedや採用判定に影響しない。
+      await new Promise((resolve) => setTimeout(resolve, 0));
     }
+  }
 
-    return cloneBlocks(
-      FALLBACK_BLOCKS
+  function solverStateKey(positions) {
+    // [娘, 横長, 縦長4個, 小駒4個]。同形駒のIDを探索状態に含めない。
+    return String.fromCharCode(
+      positions[0] + 65, positions[1] + 65,
+      ...positions.slice(2, 6).sort((a, b) => a - b).map((p) => p + 65),
+      ...positions.slice(6).sort((a, b) => a - b).map((p) => p + 65)
     );
   }
 
+  async function minimumSolutionMoves(source) {
+    const ordered = [
+      ...source.filter((block) => block.id === GOAL_ID),
+      ...source.filter((block) => block.type === "horizontal"),
+      ...source.filter((block) => block.type === "vertical"),
+      ...source.filter((block) => block.type === "small")
+    ];
+    const shapes = ordered.map(({ w, h }) => ({ w, h }));
+    const masks = shapes.map(({ w, h }) =>
+      Array.from({ length: COLS * ROWS }, (_, position) => {
+        const x = position % COLS;
+        const y = Math.floor(position / COLS);
+        if (x + w > COLS || y + h > ROWS) return 0;
+        let mask = 0;
+        for (let dy = 0; dy < h; dy += 1) {
+          for (let dx = 0; dx < w; dx += 1) {
+            mask |= 1 << (position + dy * COLS + dx);
+          }
+        }
+        return mask;
+      })
+    );
+    const start = solverStateKey(ordered.map(({ x, y }) => y * COLS + x));
+    const queue = [start];
+    const visited = new Set(queue);
+    let head = 0;
+    let depth = 0;
+    while (head < queue.length) {
+      const levelEnd = queue.length;
+      while (head < levelEnd) {
+        const key = queue[head++];
+        const positions = Array.from(key, (char) => char.charCodeAt(0) - 65);
+        if (positions[0] === 3 * COLS + 1) return depth;
+        let occupied = 0;
+        positions.forEach((position, i) => { occupied |= masks[i][position]; });
+        for (let i = 0; i < positions.length; i += 1) {
+          const position = positions[i];
+          const others = occupied ^ masks[i][position];
+          for (const { dx, dy } of Object.values(DIRS)) {
+            let x = position % COLS;
+            let y = Math.floor(position / COLS);
+            // 一方向へ連続して動ける全距離を、それぞれ1手の辺として追加する。
+            while (true) {
+              x += dx;
+              y += dy;
+              if (x < 0 || y < 0 || x + shapes[i].w > COLS || y + shapes[i].h > ROWS) break;
+              const nextPosition = y * COLS + x;
+              if (masks[i][nextPosition] & others) break;
+              const next = positions.slice();
+              next[i] = nextPosition;
+              const nextKey = solverStateKey(next);
+              if (!visited.has(nextKey)) {
+                visited.add(nextKey);
+                queue.push(nextKey);
+              }
+            }
+          }
+        }
+        if (head % 2048 === 0) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+      }
+      depth += 1;
+    }
+    return Infinity;
+  }
 
   function listLegalMoves(
     state
@@ -3106,12 +2842,10 @@
 
   function init() {
     injectStyles();
-
     ensureGiveUpButton();
-
+    ensurePlayerToolbar();
     renderHome();
   }
-
 
   window.AtamaGame = {
     restart
@@ -3123,3 +2857,4 @@
     init
   );
 })();
+
