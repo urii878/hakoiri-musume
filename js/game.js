@@ -9,6 +9,10 @@
   const ROWS = 5;
   const GOAL_ID = "goal";
   const STORAGE_PREFIX = "hakoiri-musume";
+  const MIN_SOLUTION_MOVES = 30;
+
+const PLAYER_NAME_KEY =
+  `${STORAGE_PREFIX}:player-name`;
 
   /*
     クリア状態。
