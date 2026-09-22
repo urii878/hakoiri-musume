@@ -2316,41 +2316,33 @@
   */
 
   function restartCurrent() {
-    if (
-      !mode ||
-      !initialBlocks.length
-    ) {
+    if (!mode || !initialBlocks.length) {
       renderHome();
       return;
     }
 
+    // プレイ中のリセットでは開始時刻を維持して計測を続ける。
+    // リザルトからの再挑戦は新しいプレイとして計測し直す。
+    const keepTime = screen === "play" && !finished;
+
     stopTimer();
 
-    blocks =
-      cloneBlocks(
-        initialBlocks
-      );
-
+    blocks = cloneBlocks(initialBlocks);
     moves = 0;
 
-    elapsedMs = 0;
-
-    startedAt =
-      performance.now();
+    if (!keepTime) {
+      elapsedMs = 0;
+      startedAt = performance.now();
+    }
 
     finished = false;
-
     drag = null;
 
     setLayout("play");
-
     updateToolbar();
-
     renderPlay();
-
     startTimer();
   }
-
 
   function restart() {
     if (
