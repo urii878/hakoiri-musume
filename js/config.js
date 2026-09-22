@@ -27,7 +27,7 @@ window.GAME_CONFIG = {
   ],
 
   // Vercel公開後に実際のURLへ変更します
-  canonicalUrl: "https://example.com/",
+ canonicalUrl: "https://hakoiri-musume-xi.vercel.app/",
 
   ogImage: "./assets/og-image.svg",
 
